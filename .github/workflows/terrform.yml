@@ -15,10 +15,9 @@ on:
       dynamodb_table:
         description: 'DynamoDB table for state locking'
         required: true
-
-push:
-  branches:
-    - dev  # Trigger on push to the dev branch
+  push:
+    branches:
+      - dev  # Trigger on push to the dev branch
 
 jobs:
   run_terraform:
@@ -40,10 +39,10 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          TF_BACKEND_BUCKET: ${{ github.event.inputs.backend_bucket }}
-          TF_BACKEND_KEY: ${{ github.event.inputs.backend_key }}
-          TF_BACKEND_REGION: ${{ github.event.inputs.backend_region }}
-          TF_DYNAMODB_TABLE: ${{ github.event.inputs.dynamodb_table }}
+          TF_BACKEND_BUCKET: ${{ github.event.inputs.backend_bucket || secrets.BACKEND_BUCKET }}
+          TF_BACKEND_KEY: ${{ github.event.inputs.backend_key || secrets.BACKEND_KEY }}
+          TF_BACKEND_REGION: ${{ github.event.inputs.backend_region || secrets.BACKEND_REGION }}
+          TF_DYNAMODB_TABLE: ${{ github.event.inputs.dynamodb_table || secrets.DYNAMODB_TABLE }}
         run: |
           terraform init \
             -backend-config="bucket=${{ env.TF_BACKEND_BUCKET }}" \
@@ -51,3 +50,9 @@ jobs:
             -backend-config="region=${{ env.TF_BACKEND_REGION }}" \
             -backend-config="dynamodb_table=${{ env.TF_DYNAMODB_TABLE }}" \
             -backend-config="encrypt=true"
+
+      - name: Terraform Plan
+        run: terraform plan
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
