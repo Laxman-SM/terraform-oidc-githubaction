@@ -16,6 +16,10 @@ on:
         description: 'DynamoDB table for state locking'
         required: true
 
+push:
+  branches:
+    - dev  # Trigger on push to the dev branch
+
 jobs:
   run_terraform:
     runs-on: ubuntu-latest
