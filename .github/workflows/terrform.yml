@@ -53,13 +53,12 @@ jobs:
           TF_BACKEND_REGION: ${{ github.event.inputs.backend_region || secrets.BACKEND_REGION }}
           TF_DYNAMODB_TABLE: ${{ github.event.inputs.dynamodb_table || secrets.DYNAMODB_TABLE }}
         run: |
-          output=$(terraform init \
+          terraform init \
             -backend-config="bucket=${{ env.TF_BACKEND_BUCKET }}" \
             -backend-config="key=${{ env.TF_BACKEND_KEY }}" \
             -backend-config="region=${{ env.TF_BACKEND_REGION }}" \
             -backend-config="dynamodb_table=${{ env.TF_DYNAMODB_TABLE }}" \
-            -backend-config="encrypt=true")
-          echo "stdout=$output" >> $GITHUB_ENV
+            -backend-config="encrypt=true"
 
       - name: Terraform Plan
         run: terraform plan
