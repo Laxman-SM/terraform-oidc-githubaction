@@ -131,7 +131,7 @@ variable "environment" {
   type        = string
 }
 
-/*
+
 terraform {
   backend "s3" {
     bucket         = var.backend_bucket
@@ -142,7 +142,7 @@ terraform {
   }
 }
 
-
+/*
 variable "backend_bucket" {
   description = "The name of the S3 bucket for Terraform state"
 }
