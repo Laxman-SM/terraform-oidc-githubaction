@@ -59,14 +59,14 @@ jobs:
             -backend-config="encrypt=true"
 
      - name: Terraform Fmt
+         working-directory: terraform/aws
          id: fmt
          run: terraform fmt -check
-         working-directory: ./terraform/aws
 
       - name: Terraform Validate
+          working-directory: terraform/aws
           id: validate
           run: terraform validate -no-color
-          working-directory: ./terraform/aws
 
       - name: Terraform Plan
         working-directory: terraform/aws
