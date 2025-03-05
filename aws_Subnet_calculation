@@ -30,7 +30,7 @@ locals {
   # Calculate the number of usable hosts per subnet
   usable_hosts = [
     for subnet in local.subnets :
-    (2 ** (32 - local.subnet_size)) - 2 # Subtracting 2 for network and broadcast addresses
+    (pow(2, (32 - local.subnet_size))) - 2 # Subtracting 2 for network and broadcast addresses
   ]
 
   # Define the locals block for region and subnet configurations
@@ -78,7 +78,7 @@ locals {
     can(regex("^(8\\.0\\.[0-9]{1,3}\\.0/26)$", subnet.cidr_block))
   ])
 
-  updated_subnet_count = var.update_subnet_count
+   updated_subnet_count = var.update_subnet_count
   updated_subnets = [
     for i in range(local.updated_subnet_count) :
     cidrsubnet(var.base_cidr, local.subnet_size - 16, i)
@@ -105,3 +105,4 @@ resource "null_resource" "validate_subnets" {
     command = "echo 'Invalid subnet CIDR blocks detected: ${join(", ", [for subnet in concat(local.selected_region.public_subnets, local.selected_region.private_subnets) : subnet.cidr_block])}' && exit 1"
   }
 }
+
