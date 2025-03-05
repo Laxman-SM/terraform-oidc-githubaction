@@ -1,0 +1,107 @@
+variable "base_cidr" {
+  description = "Base CIDR block for the VPC"
+  type        = string
+  default     = "10.0.0.0/16"
+}
+
+variable "aws_region" {
+  description = "AWS region to deploy resources"
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "update_subnet_count" {
+  description = "Update the number of subnets"
+  type        = number
+  default     = 4
+}
+
+locals {
+  # Calculate the number of subnets and hosts
+  subnet_count = 4  # Number of subnets you want to create
+  subnet_size  = 26 # Subnet size (e.g., /26)
+
+  # Calculate the subnets dynamically
+  subnets = [
+    for i in range(local.subnet_count) :
+    cidrsubnet(var.base_cidr, local.subnet_size - 16, i) # Adjusting for the base CIDR
+  ]
+
+  # Calculate the number of usable hosts per subnet
+  usable_hosts = [
+    for subnet in local.subnets :
+    (2 ** (32 - local.subnet_size)) - 2 # Subtracting 2 for network and broadcast addresses
+  ]
+
+  # Define the locals block for region and subnet configurations
+  complex = {
+    "us-east-1" = {
+      region     = "us-east-1"
+      cidr_block = "6.0.0.0/22"
+      private_subnets = [
+        { az = "a", cidr_block = "6.0.1.0/26" },
+        { az = "b", cidr_block = "6.0.1.64/26" },
+        { az = "c", cidr_block = "6.0.1.128/26" },
+        { az = "d", cidr_block = "6.0.1.192/26" }
+      ]
+      public_subnets = [
+        { az = "a", cidr_block = "6.0.0.0/26" },
+        { az = "b", cidr_block = "6.0.0.64/26" },
+        { az = "c", cidr_block = "6.0.0.128/26" },
+        { az = "d", cidr_block = "6.0.0.192/26" }
+      ]
+    }
+    "eu-west-1" = {
+      region     = "eu-west-1"
+      cidr_block = "8.0.0.0/22"
+      private_subnets = [
+        { az = "a", cidr_block = "8.0.1.0/26" },
+        { az = "b", cidr_block = "8.0.1.64/26" },
+        { az = "c", cidr_block = "8.0.1.128/26" },
+        { az = "d", cidr_block = "8.0.1.192/26" }
+      ]
+      public_subnets = [
+        { az = "a", cidr_block = "8.0.0.0/26" },
+        { az = "b", cidr_block = "8.0.0.64/26" },
+        { az = "c", cidr_block = "8.0.0.128/26" },
+        { az = "d", cidr_block = "8.0.0.192/26" }
+      ]
+    }
+  }
+
+  selected_region = local.complex[var.aws_region]
+
+  # Validate subnets in the selected region
+  subnet_validation = alltrue([
+    for subnet in concat(local.selected_region.public_subnets, local.selected_region.private_subnets) : 
+    can(regex("^(6\\.0\\.[0-9]{1,3}\\.0/26)$", subnet.cidr_block)) || 
+    can(regex("^(8\\.0\\.[0-9]{1,3}\\.0/26)$", subnet.cidr_block))
+  ])
+
+  updated_subnet_count = var.update_subnet_count
+  updated_subnets = [
+    for i in range(local.updated_subnet_count) :
+    cidrsubnet(var.base_cidr, local.subnet_size - 16, i)
+  ]
+}
+
+output "subnets" {
+  value = local.subnets
+}
+
+output "usable_hosts" {
+  value = local.usable_hosts
+}
+
+output "updated_subnets" {
+  value = local.updated_subnets
+}
+
+# Validate the subnets in the selected region
+resource "null_resource" "validate_subnets" {
+  count = local.subnet_validation ? 0 : 1
+
+  provisioner "local-exec" {
+    command = "echo 'Invalid subnet CIDR blocks detected: ${join(", ", [for subnet in concat(local.selected_region.public_subnets, local.selected_region.private_subnets) : subnet.cidr_block])}' && exit 1"
+  }
+}
